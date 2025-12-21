@@ -14,8 +14,8 @@ export class NotificationService {
       // TODO: Implement actual push notification service
       // This could use Firebase Cloud Messaging, OneSignal, or similar
       
-      console.log('Mock push notification:', payload);
-      return true;
+      console.error('Push notification service not implemented yet');
+      throw new Error('Push notification service not implemented');
     } catch (error) {
       console.error('Push notification failed:', error);
       return false;
@@ -32,8 +32,8 @@ export class NotificationService {
       // TODO: Implement actual email service using nodemailer
       // Configure with SMTP or service like SendGrid, Mailgun, etc.
       
-      console.log('Mock email:', { to, subject, body });
-      return true;
+      console.error('Email service not implemented yet');
+      throw new Error('Email service not implemented');
     } catch (error) {
       console.error('Email sending failed:', error);
       return false;
@@ -51,15 +51,8 @@ export class NotificationService {
       // TODO: Implement job scheduling using BullMQ or similar
       // This would create a delayed job that sends notification at the right time
       
-      console.log('Mock scheduled reminder:', {
-        userId,
-        title,
-        body,
-        scheduledAt,
-        type,
-      });
-      
-      return true;
+      console.error('Reminder scheduling service not implemented yet');
+      throw new Error('Reminder scheduling service not implemented');
     } catch (error) {
       console.error('Reminder scheduling failed:', error);
       return false;

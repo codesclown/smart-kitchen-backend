@@ -148,63 +148,12 @@ Focus on creating a practical, delicious recipe that maximizes the use of availa
     if (error instanceof Error) {
       if (error.message.includes('API key') || error.message.includes('401')) {
         console.error('🔑 Invalid OpenAI API key. Please check your API key configuration.');
-        
-        // For development, provide a fallback recipe
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔄 Providing fallback recipe for development...');
-          return {
-            title: `Simple ${cuisine || 'Mixed'} Dish with ${availableIngredients.slice(0, 3).join(', ')}`,
-            ingredients: availableIngredients.slice(0, 5).map((ingredient, index) => ({
-              name: ingredient,
-              amount: ['2 tbsp', '1 cup', '150g', '2 pieces', '1 tsp'][index % 5],
-              unit: 'mixed',
-              available: true
-            })),
-            steps: [
-              { step: 1, instruction: 'Prepare all ingredients by washing and chopping as needed.', time: '5 minutes' },
-              { step: 2, instruction: 'Heat oil in a pan and add the main ingredients.', time: '10 minutes' },
-              { step: 3, instruction: 'Cook until tender and season to taste.', time: '15 minutes' },
-              { step: 4, instruction: 'Serve hot and enjoy!', time: '2 minutes' }
-            ],
-            cuisine: cuisine || 'International',
-            prepTime: prepTime || 30,
-            calories: 250,
-            difficulty: 'Easy',
-            servings: 4,
-          };
-        }
-        
         throw new Error('AI service not available - Invalid API key. Please check your OpenAI API key configuration.');
       }
       if (error.message.includes('quota') || error.message.includes('billing')) {
         console.error('💳 OpenAI API quota exceeded or billing issue.');
         throw new Error('AI service not available - API quota exceeded. Please check your OpenAI billing.');
       }
-    }
-    
-    // For development, provide a fallback recipe
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔄 Providing fallback recipe for development...');
-      return {
-        title: `Simple ${cuisine || 'Mixed'} Dish with ${availableIngredients.slice(0, 3).join(', ')}`,
-        ingredients: availableIngredients.slice(0, 5).map((ingredient, index) => ({
-          name: ingredient,
-          amount: ['2 tbsp', '1 cup', '150g', '2 pieces', '1 tsp'][index % 5],
-          unit: 'mixed',
-          available: true
-        })),
-        steps: [
-          { step: 1, instruction: 'Prepare all ingredients by washing and chopping as needed.', time: '5 minutes' },
-          { step: 2, instruction: 'Heat oil in a pan and add the main ingredients.', time: '10 minutes' },
-          { step: 3, instruction: 'Cook until tender and season to taste.', time: '15 minutes' },
-          { step: 4, instruction: 'Serve hot and enjoy!', time: '2 minutes' }
-        ],
-        cuisine: cuisine || 'International',
-        prepTime: prepTime || 30,
-        calories: 250,
-        difficulty: 'Easy',
-        servings: 4,
-      };
     }
     
     // Don't use fallback in production - throw the error so the resolver can handle it

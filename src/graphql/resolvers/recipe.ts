@@ -5,12 +5,7 @@ export const recipeResolvers: any = {
   Query: {
     recipeHistory: async (_: any, { kitchenId }: any, context: Context) => {
       if (kitchenId) {
-        // In development mode, allow querying with fallback kitchen ID
-        if (process.env.NODE_ENV === 'development' && kitchenId === 'dev-kitchen-fallback') {
-          console.log('🧪 Development mode: Using fallback kitchen for recipe history');
-        } else {
-          await requireKitchenAccess(context, kitchenId);
-        }
+        await requireKitchenAccess(context, kitchenId);
       }
       
       return context.prisma.recipeHistory.findMany({
@@ -23,12 +18,7 @@ export const recipeResolvers: any = {
     generateRecipe: async (_: any, { input }: any, context: Context) => {
       const { kitchenId, availableIngredients, cuisine, prepTime, dietary } = input;
       
-      // In development mode, allow testing without strict kitchen access
-      if (process.env.NODE_ENV === 'development' && kitchenId === 'test-kitchen-id') {
-        console.log('🧪 Development mode: Bypassing kitchen access check for testing');
-      } else {
-        await requireKitchenAccess(context, kitchenId, 'MEMBER');
-      }
+      await requireKitchenAccess(context, kitchenId, 'MEMBER');
 
       console.log('🚀 Starting recipe generation...');
       console.log('Input:', { availableIngredients, cuisine, prepTime, dietary });
@@ -45,24 +35,19 @@ export const recipeResolvers: any = {
         console.log('✅ AI recipe generated successfully:', recipe.title);
         console.log('Ingredients with amounts:', recipe.ingredients);
 
-        // Only save to history if it's a real kitchen (not test)
-        if (kitchenId !== 'test-kitchen-id') {
-          await context.prisma.recipeHistory.create({
-            data: {
-              kitchenId,
-              title: recipe.title,
-              ingredients: recipe.ingredients,
-              steps: recipe.steps,
-              cuisine: recipe.cuisine,
-              prepTime: recipe.prepTime,
-              calories: recipe.calories,
-              source: 'AI',
-            },
-          });
-          console.log('💾 Recipe saved to history');
-        } else {
-          console.log('🧪 Test mode: Skipping database save');
-        }
+        await context.prisma.recipeHistory.create({
+          data: {
+            kitchenId,
+            title: recipe.title,
+            ingredients: recipe.ingredients,
+            steps: recipe.steps,
+            cuisine: recipe.cuisine,
+            prepTime: recipe.prepTime,
+            calories: recipe.calories,
+            source: 'AI',
+          },
+        });
+        console.log('💾 Recipe saved to history');
 
         return recipe;
       } catch (error) {
@@ -87,20 +72,12 @@ export const recipeResolvers: any = {
     saveRecipe: async (_: any, { input }: any, context: Context) => {
       const { kitchenId, title, ingredients, steps, cuisine, prepTime, calories, isFavorite } = input;
       
-      let effectiveKitchenId = kitchenId;
-      
-      // In development mode, allow saving with fallback kitchen ID or null
-      if (process.env.NODE_ENV === 'development' && kitchenId === 'dev-kitchen-fallback') {
-        console.log('🧪 Development mode: Using null kitchen for recipe save');
-        effectiveKitchenId = null; // Use null instead of fake ID
-      } else {
-        await requireKitchenAccess(context, kitchenId, 'MEMBER');
-      }
+      await requireKitchenAccess(context, kitchenId, 'MEMBER');
 
       try {
         const savedRecipe = await context.prisma.recipeHistory.create({
           data: {
-            kitchenId: effectiveKitchenId,
+            kitchenId,
             title,
             ingredients: typeof ingredients === 'string' ? ingredients : JSON.stringify(ingredients),
             steps: typeof steps === 'string' ? steps : JSON.stringify(steps),
