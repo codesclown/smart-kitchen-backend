@@ -186,4 +186,4 @@ MIT License - see LICENSE file for details
 For support and questions:
 - Create an issue in the repository
 - Check the GraphQL playground documentation
-- Review the API schema and resolvers
+- Review the API schema and resolvers# smart-kitchen-backend
