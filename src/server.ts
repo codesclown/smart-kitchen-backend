@@ -1,8 +1,6 @@
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import { resolve } from 'path';
 
-// Load .env from project root
-dotenv.config({ path: resolve(__dirname, '../.env') });
 
 import Fastify from 'fastify';
 import { ApolloServer } from '@apollo/server';
