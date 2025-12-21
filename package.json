@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "npm run db:generate && rm -f tsconfig.tsbuildinfo && tsc",
-    "start": "node start.js",
-    "start:prod": "node dist/server.js",
+    "start": "node deploy-start.js",
+    "start:direct": "node dist/server.js",
     "postbuild": "npm run db:generate",
     "type-check": "tsc --noEmit",
     "db:generate": "prisma generate",
