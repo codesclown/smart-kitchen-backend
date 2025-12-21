@@ -1,0 +1,483 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User & Authentication
+model User {
+  id            String            @id @default(cuid())
+  email         String            @unique
+  name          String?
+  password      String
+  avatar        String?
+  phone         String?
+  emailVerified Boolean           @default(false)
+  settings      Json?             // User settings and preferences
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  households    HouseholdMember[]
+  createdHouseholds Household[]   @relation("HouseholdCreator")
+  mealPlans     MealPlan[]
+  nutritionEntries NutritionEntry[]
+  nutritionGoals NutritionGoals[]
+  wasteEntries  WasteEntry[]
+  timers        KitchenTimer[]
+}
+
+// Household Management
+model Household {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  createdById String
+  createdBy   User              @relation("HouseholdCreator", fields: [createdById], references: [id])
+  members     HouseholdMember[]
+  kitchens    Kitchen[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model HouseholdMember {
+  id          String        @id @default(cuid())
+  userId      String
+  householdId String
+  role        HouseholdRole @default(MEMBER)
+  joinedAt    DateTime      @default(now())
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  household   Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, householdId])
+}
+
+enum HouseholdRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+// Kitchen Management
+model Kitchen {
+  id          String          @id @default(cuid())
+  householdId String
+  name        String
+  description String?
+  type        KitchenType     @default(HOME)
+  household   Household       @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  inventory   InventoryItem[]
+  shopping    ShoppingList[]
+  expenses    Expense[]
+  reminders   Reminder[]
+  logs        UsageLog[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+enum KitchenType {
+  HOME
+  OFFICE
+  PG
+  HOSTEL
+}
+
+// Inventory Management
+model InventoryItem {
+  id          String           @id @default(cuid())
+  kitchenId   String
+  name        String
+  category    String
+  imageUrl    String?
+  defaultUnit String
+  threshold   Float?
+  brand       String?
+  tags        String[]
+  location    StorageLocation  @default(PANTRY)
+  kitchen     Kitchen          @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
+  batches     InventoryBatch[]
+  usageLogs   UsageLog[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+enum StorageLocation {
+  PANTRY
+  FRIDGE
+  FREEZER
+  CONTAINER
+  CABINET
+}
+
+model InventoryBatch {
+  id            String        @id @default(cuid())
+  itemId        String
+  quantity      Float
+  unit          String
+  expiryDate    DateTime?
+  purchaseDate  DateTime?
+  purchasePrice Float?
+  vendor        String?
+  status        BatchStatus   @default(ACTIVE)
+  item          InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+enum BatchStatus {
+  ACTIVE
+  USED
+  EXPIRED
+  WASTED
+}
+
+// Shopping Lists
+model ShoppingList {
+  id          String             @id @default(cuid())
+  kitchenId   String
+  type        ShoppingListType
+  title       String
+  description String?
+  forDate     DateTime?
+  isCompleted Boolean            @default(false)
+  kitchen     Kitchen            @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
+  items       ShoppingListItem[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+enum ShoppingListType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  FESTIVAL
+  EVENT
+  CUSTOM
+}
+
+model ShoppingListItem {
+  id           String       @id @default(cuid())
+  listId       String
+  name         String
+  quantity     Float?
+  unit         String?
+  linkedItemId String?
+  isPurchased  Boolean      @default(false)
+  price        Float?
+  notes        String?
+  list         ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+// Expense Tracking
+model Expense {
+  id           String       @id @default(cuid())
+  kitchenId    String
+  type         ExpenseType
+  amount       Float
+  vendor       String?
+  date         DateTime
+  billImageUrl String?
+  items        Json?
+  notes        String?
+  category     String?
+  kitchen      Kitchen      @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+enum ExpenseType {
+  RATION
+  FOOD_ORDER
+  GROCERY
+  VEGETABLES
+  FRUITS
+  DAIRY
+  MEAT
+  OTHER
+}
+
+// Reminders
+model Reminder {
+  id          String       @id @default(cuid())
+  kitchenId   String
+  type        ReminderType
+  title       String
+  description String?
+  scheduledAt DateTime
+  isRecurring Boolean      @default(false)
+  frequency   String?
+  isCompleted Boolean      @default(false)
+  meta        Json?
+  kitchen     Kitchen      @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+enum ReminderType {
+  LOW_STOCK
+  EXPIRY
+  SHOPPING
+  FESTIVAL
+  APPLIANCE
+  GAS_CYLINDER
+  WATER_CAN
+  CUSTOM
+}
+
+// Usage Logs
+model UsageLog {
+  id        String        @id @default(cuid())
+  kitchenId String
+  itemId    String
+  type      UsageLogType
+  quantity  Float
+  unit      String
+  notes     String?
+  date      DateTime      @default(now())
+  kitchen   Kitchen       @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
+  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+}
+
+enum UsageLogType {
+  COOKED
+  CONSUMED
+  WASTED
+  PURCHASED
+  ADJUSTED
+}
+
+// AI Scan History
+model AIScan {
+  id          String   @id @default(cuid())
+  imageUrl    String
+  scanType    String
+  result      Json
+  confidence  Float?
+  processed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+// Recipe History
+model RecipeHistory {
+  id          String   @id @default(cuid())
+  kitchenId   String?
+  title       String
+  ingredients Json
+  steps       Json
+  cuisine     String?
+  prepTime    Int?
+  calories    Int?
+  source      String   @default("AI")
+  isFavorite  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+// Meal Planning
+model MealPlan {
+  id          String     @id @default(cuid())
+  userId      String
+  kitchenId   String?
+  date        DateTime
+  mealType    MealType
+  recipeId    String?
+  recipeName  String?
+  servings    Int?
+  calories    Int?
+  prepTime    Int?
+  notes       String?
+  isCompleted Boolean    @default(false)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([userId, date, mealType])
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+model MealPlanTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  category    String   // "festival", "weekly", "diet", etc.
+  meals       Json     // Array of meal plan entries
+  duration    Int?     // Duration in days
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Nutrition Tracking
+model NutritionEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  date        DateTime
+  mealType    MealType
+  foodName    String
+  quantity    Float
+  unit        String
+  calories    Float?
+  protein     Float?
+  carbs       Float?
+  fat         Float?
+  fiber       Float?
+  sugar       Float?
+  sodium      Float?
+  notes       String?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model NutritionGoals {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  dailyCalories Float?
+  dailyProtein Float?
+  dailyCarbs   Float?
+  dailyFat     Float?
+  dailyFiber   Float?
+  dailyWater   Float?   // in liters
+  weightGoal   Float?   // target weight
+  activityLevel String? // sedentary, light, moderate, active, very_active
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model WaterIntake {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime
+  amount    Float    // in ml
+  time      DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId, date])
+}
+
+// Waste Tracking
+model WasteEntry {
+  id          String    @id @default(cuid())
+  userId      String
+  kitchenId   String?
+  date        DateTime
+  itemName    String
+  category    String?
+  quantity    Float
+  unit        String
+  reason      WasteReason
+  cost        Float?    // estimated cost of wasted item
+  preventable Boolean   @default(true)
+  notes       String?
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum WasteReason {
+  EXPIRED
+  SPOILED
+  OVERCOOKED
+  LEFTOVER
+  ACCIDENTAL
+  DISLIKED
+  OTHER
+}
+
+model WasteGoals {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  monthlyWasteKg  Float?   // target waste in kg per month
+  monthlyCostSave Float?   // target cost savings per month
+  co2SaveKg       Float?   // target CO2 savings in kg per month
+  waterSaveLiters Float?   // target water savings in liters per month
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Kitchen Timer
+model KitchenTimer {
+  id          String      @id @default(cuid())
+  userId      String
+  name        String
+  duration    Int         // duration in seconds
+  category    TimerCategory
+  isActive    Boolean     @default(false)
+  startedAt   DateTime?
+  pausedAt    DateTime?
+  completedAt DateTime?
+  notes       String?
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+enum TimerCategory {
+  COOKING
+  BAKING
+  STEAMING
+  BOILING
+  MARINATING
+  RESTING
+  CUSTOM
+}
+
+// Notifications
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?            // Additional data for the notification
+  isRead    Boolean          @default(false)
+  sentAt    DateTime?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+
+enum NotificationType {
+  EXPIRY_WARNING
+  LOW_STOCK
+  SHOPPING_REMINDER
+  MEAL_PLAN_REMINDER
+  TIMER_COMPLETE
+  WASTE_GOAL_EXCEEDED
+  NUTRITION_GOAL_ACHIEVED
+  SYSTEM_UPDATE
+  GENERAL
+}
+
+// User Preferences
+model UserPreferences {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  theme                 String?  @default("system") // light, dark, system
+  language              String?  @default("en")
+  timezone              String?  @default("UTC")
+  currency              String?  @default("INR")
+  units                 String?  @default("metric") // metric, imperial
+  notifications         Json?    // notification preferences
+  privacy               Json?    // privacy settings
+  accessibility         Json?    // accessibility settings
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([userId])
+}
