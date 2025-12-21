@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "npm run db:generate && tsc",
+    "build": "npm run db:generate && rm -f tsconfig.tsbuildinfo && tsc",
     "start": "node start.js",
     "start:prod": "node dist/server.js",
     "postbuild": "npm run db:generate",
@@ -32,6 +32,11 @@
     "@fastify/multipart": "^7.6.0",
     "@fastify/rate-limit": "^9.1.0",
     "@prisma/client": "^6.19.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.10.6",
+    "@types/nodemailer": "^6.4.14",
+    "@types/uuid": "^9.0.8",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.1.9",
     "date-fns": "^3.0.6",
@@ -48,20 +53,15 @@
     "openai": "^4.24.1",
     "sharp": "^0.33.1",
     "tesseract.js": "^5.0.4",
+    "typescript": "^5.3.3",
     "uuid": "^9.0.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^20.10.6",
-    "@types/nodemailer": "^6.4.14",
-    "@types/uuid": "^9.0.8",
     "eslint": "^9.15.0",
     "prettier": "^3.3.0",
     "prisma": "^6.19.0",
-    "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "tsx": "^4.7.0"
   },
   "keywords": [
     "kitchen",
