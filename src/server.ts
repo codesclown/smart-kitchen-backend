@@ -56,7 +56,7 @@ async function startServer() {
 
   await fastify.register(cors, {
     origin: process.env.NODE_ENV === 'production' 
-      ? [process.env.FRONTEND_URL || 'https://your-domain.com']
+      ? (process.env.FRONTEND_URL || 'https://your-domain.com').split(',')
       : true,
     credentials: true,
   });
