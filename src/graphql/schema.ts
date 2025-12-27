@@ -851,6 +851,7 @@ export const typeDefs: DocumentNode = gql`
     expenses(kitchenId: ID!, limit: Int = 50): [Expense!]!
     expense(id: ID!): Expense
     expenseStats(kitchenId: ID!, period: String!): JSON!
+    priceTrends(kitchenId: ID!, days: Int = 30): JSON!
 
     # Reminders
     reminders(kitchenId: ID!): [Reminder!]!
