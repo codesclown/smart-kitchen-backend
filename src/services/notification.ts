@@ -33,6 +33,13 @@ export class NotificationService {
       // Get user preferences
       const user = await this.prisma.user.findUnique({
         where: { id: notificationData.userId },
+        include: {
+          settings: {
+            include: {
+              notifications: true,
+            },
+          },
+        },
       });
 
       if (!user) {
@@ -41,11 +48,11 @@ export class NotificationService {
       }
 
       // Check user notification preferences
-      const settings = user.settings as any;
-      const notificationPrefs = settings?.notifications || {};
+      const settings = user.settings;
+      const notificationPrefs = settings?.notifications;
 
       // Send email notification if enabled
-      if (notificationPrefs.email !== false && user.email) {
+      if (notificationPrefs?.email !== false && user.email) {
         await this.sendEmailNotification(user.email, notificationData);
       }
 

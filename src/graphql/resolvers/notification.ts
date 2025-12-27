@@ -182,25 +182,55 @@ export const notificationResolvers: any = {
         // Get current settings
         const currentUser = await context.prisma.user.findUnique({
           where: { id: user.id },
+          include: {
+            settings: {
+              include: {
+                notifications: true,
+                privacy: true,
+              },
+            },
+          },
         });
 
-        const currentSettings = (currentUser?.settings as any) || {};
+        const currentSettings = currentUser?.settings || {};
         
-        // Update notification preferences
-        const updatedSettings = {
-          ...currentSettings,
-          notifications: {
-            ...currentSettings.notifications,
-            ...preferences,
-          },
-        };
-
-        await context.prisma.user.update({
-          where: { id: user.id },
-          data: {
-            settings: updatedSettings,
-          },
-        });
+        // Update notification preferences using proper Prisma syntax
+        if (currentUser?.settings?.notifications) {
+          // Update existing notification settings
+          await context.prisma.notificationSettings.update({
+            where: { id: currentUser.settings.notifications.id },
+            data: preferences,
+          });
+        } else if (currentUser?.settings) {
+          // Create notification settings for existing user settings
+          const notificationSettings = await context.prisma.notificationSettings.create({
+            data: preferences,
+          });
+          
+          await context.prisma.userSettings.update({
+            where: { id: currentUser.settings.id },
+            data: {
+              notificationId: notificationSettings.id,
+            },
+          });
+        } else {
+          // Create complete new settings
+          const notificationSettings = await context.prisma.notificationSettings.create({
+            data: preferences,
+          });
+          
+          const privacySettings = await context.prisma.privacySettings.create({
+            data: {},
+          });
+          
+          await context.prisma.userSettings.create({
+            data: {
+              userId: user.id,
+              notificationId: notificationSettings.id,
+              privacyId: privacySettings.id,
+            },
+          });
+        }
 
         return true;
       } catch (error: any) {

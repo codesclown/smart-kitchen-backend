@@ -27,10 +27,14 @@ export const householdResolvers = {
       const user = requireAuth(context);
       const { name, description } = input;
 
+      // Generate a unique invite code
+      const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
       const household = await context.prisma.household.create({
         data: {
           name,
           description,
+          inviteCode,
           createdById: user.id,
         },
       });

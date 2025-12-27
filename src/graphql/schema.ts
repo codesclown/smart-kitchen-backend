@@ -12,11 +12,62 @@ export const typeDefs: DocumentNode = gql`
     name: String
     avatar: String
     phone: String
+    location: String
     emailVerified: Boolean!
-    settings: JSON
+    settings: UserSettings
+    preferences: UserPreferences
     createdAt: DateTime!
     updatedAt: DateTime!
     households: [HouseholdMember!]!
+  }
+
+  type UserSettings {
+    id: ID!
+    userId: ID!
+    notifications: NotificationSettings!
+    privacy: PrivacySettings!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+  }
+
+  type NotificationSettings {
+    lowStock: Boolean!
+    expiry: Boolean!
+    shopping: Boolean!
+    mealPlan: Boolean!
+    push: Boolean!
+    email: Boolean!
+    sms: Boolean!
+  }
+
+  type PrivacySettings {
+    profileVisibility: ProfileVisibility!
+    dataSharing: Boolean!
+    analyticsOptOut: Boolean!
+  }
+
+  enum ProfileVisibility {
+    PUBLIC
+    HOUSEHOLD_ONLY
+    PRIVATE
+  }
+
+  type UserPreferences {
+    id: ID!
+    userId: ID!
+    theme: Theme!
+    language: String!
+    currency: String!
+    timezone: String!
+    dateFormat: String!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+  }
+
+  enum Theme {
+    LIGHT
+    DARK
+    SYSTEM
   }
 
   type AuthPayload {
@@ -29,6 +80,7 @@ export const typeDefs: DocumentNode = gql`
     id: ID!
     name: String!
     description: String
+    inviteCode: String
     createdBy: User!
     members: [HouseholdMember!]!
     kitchens: [Kitchen!]!
@@ -510,15 +562,37 @@ export const typeDefs: DocumentNode = gql`
   input UpdateUserProfileInput {
     name: String
     phone: String
+    location: String
     avatar: String
   }
 
   input UpdateUserSettingsInput {
-    notifications: JSON
-    privacy: JSON
-    appSettings: JSON
-    security: JSON
-    support: JSON
+    notifications: NotificationSettingsInput
+    privacy: PrivacySettingsInput
+  }
+
+  input NotificationSettingsInput {
+    lowStock: Boolean
+    expiry: Boolean
+    shopping: Boolean
+    mealPlan: Boolean
+    push: Boolean
+    email: Boolean
+    sms: Boolean
+  }
+
+  input PrivacySettingsInput {
+    profileVisibility: ProfileVisibility
+    dataSharing: Boolean
+    analyticsOptOut: Boolean
+  }
+
+  input UpdateUserPreferencesInput {
+    theme: Theme
+    language: String
+    currency: String
+    timezone: String
+    dateFormat: String
   }
 
   input CreateHouseholdInput {
@@ -829,6 +903,10 @@ export const typeDefs: DocumentNode = gql`
     # Auth
     me: User
 
+    # Settings
+    userSettings: UserSettings
+    userPreferences: UserPreferences
+
     # Households
     households: [Household!]!
     household(id: ID!): Household
@@ -907,6 +985,7 @@ export const typeDefs: DocumentNode = gql`
     # User Profile
     updateUserProfile(input: UpdateUserProfileInput!): User!
     updateUserSettings(input: UpdateUserSettingsInput!): Boolean!
+    updateUserPreferences(input: UpdateUserPreferencesInput!): Boolean!
     uploadAvatar: UploadResult!
     getAvatarUploadUrl: PresignedUploadResult!
 

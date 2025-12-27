@@ -15,8 +15,10 @@ model User {
   password      String
   avatar        String?
   phone         String?
+  location      String?
   emailVerified Boolean           @default(false)
-  settings      Json?             // User settings and preferences
+  settings      UserSettings?
+  preferences   UserPreferences?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
   households    HouseholdMember[]
@@ -28,11 +30,74 @@ model User {
   timers        KitchenTimer[]
 }
 
+// User Settings
+model UserSettings {
+  id            String              @id @default(cuid())
+  userId        String              @unique
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifications NotificationSettings @relation(fields: [notificationId], references: [id])
+  notificationId String             @unique
+  privacy       PrivacySettings     @relation(fields: [privacyId], references: [id])
+  privacyId     String              @unique
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+}
+
+model NotificationSettings {
+  id         String        @id @default(cuid())
+  lowStock   Boolean       @default(true)
+  expiry     Boolean       @default(true)
+  shopping   Boolean       @default(false)
+  mealPlan   Boolean       @default(true)
+  push       Boolean       @default(true)
+  email      Boolean       @default(false)
+  sms        Boolean       @default(false)
+  settings   UserSettings?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+model PrivacySettings {
+  id                String            @id @default(cuid())
+  profileVisibility ProfileVisibility @default(HOUSEHOLD_ONLY)
+  dataSharing       Boolean           @default(false)
+  analyticsOptOut   Boolean           @default(false)
+  settings          UserSettings?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+}
+
+enum ProfileVisibility {
+  PUBLIC
+  HOUSEHOLD_ONLY
+  PRIVATE
+}
+
+model UserPreferences {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme      Theme    @default(SYSTEM)
+  language   String   @default("en-US")
+  currency   String   @default("INR")
+  timezone   String   @default("Asia/Kolkata")
+  dateFormat String   @default("DD/MM/YYYY")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
 // Household Management
 model Household {
   id          String            @id @default(cuid())
   name        String
   description String?
+  inviteCode  String?           @unique
   createdById String
   createdBy   User              @relation("HouseholdCreator", fields: [createdById], references: [id])
   members     HouseholdMember[]
@@ -464,20 +529,3 @@ enum NotificationType {
   GENERAL
 }
 
-// User Preferences
-model UserPreferences {
-  id                    String   @id @default(cuid())
-  userId                String   @unique
-  theme                 String?  @default("system") // light, dark, system
-  language              String?  @default("en")
-  timezone              String?  @default("UTC")
-  currency              String?  @default("INR")
-  units                 String?  @default("metric") // metric, imperial
-  notifications         Json?    // notification preferences
-  privacy               Json?    // privacy settings
-  accessibility         Json?    // accessibility settings
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-
-  @@index([userId])
-}

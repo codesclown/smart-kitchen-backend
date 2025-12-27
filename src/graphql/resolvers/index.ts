@@ -1,6 +1,7 @@
 import { DateTimeResolver, JSONResolver } from 'graphql-scalars';
 import { authResolvers } from './auth';
 import { userResolvers } from './user';
+import { settingsResolvers } from './settings';
 import { householdResolvers } from './household';
 import { kitchenResolvers } from './kitchen';
 import { inventoryResolvers } from './inventory';
@@ -23,6 +24,7 @@ export const resolvers: any = {
 
   Query: {
     ...authResolvers.Query,
+    ...settingsResolvers.Query,
     ...householdResolvers.Query,
     ...kitchenResolvers.Query,
     ...inventoryResolvers.Query,
@@ -42,6 +44,7 @@ export const resolvers: any = {
   Mutation: {
     ...authResolvers.Mutation,
     ...userResolvers.Mutation,
+    ...settingsResolvers.Mutation,
     ...householdResolvers.Mutation,
     ...kitchenResolvers.Mutation,
     ...inventoryResolvers.Mutation,
@@ -61,6 +64,7 @@ export const resolvers: any = {
 
   // Type resolvers
   User: {
+    ...settingsResolvers.User,
     households: async (parent: any, _: any, context: any) => {
       return context.prisma.householdMember.findMany({
         where: { userId: parent.id },
@@ -68,6 +72,8 @@ export const resolvers: any = {
       });
     },
   },
+
+  UserSettings: settingsResolvers.UserSettings,
 
   Household: {
     createdBy: async (parent: any, _: any, context: any) => {
