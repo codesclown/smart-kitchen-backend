@@ -17,6 +17,7 @@ import { typeDefs } from './graphql/schema';
 import { resolvers } from './graphql/resolvers';
 import { createContext, Context } from './graphql/context';
 import { prisma } from './lib/prisma';
+import { OCRService } from './services/ocr';
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 4000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -145,6 +146,120 @@ async function startServer() {
     } catch (error) {
       fastify.log.error('Health check failed: ' + (error as Error).message);
       throw new Error('Database connection failed');
+    }
+  });
+
+  // OCR Inventory endpoint
+  fastify.post('/ocr/inventory', async (request, reply) => {
+    try {
+      // Check if file was uploaded
+      const data = await request.file();
+      if (!data) {
+        return reply.code(400).send({
+          error: 'Bad Request',
+          message: 'No image file provided',
+          statusCode: 400
+        });
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(data.mimetype)) {
+        return reply.code(400).send({
+          error: 'Bad Request',
+          message: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed.',
+          statusCode: 400
+        });
+      }
+
+      // Convert file to buffer
+      const buffer = await data.toBuffer();
+
+      // Validate file size (max 10MB)
+      if (buffer.length > 10 * 1024 * 1024) {
+        return reply.code(400).send({
+          error: 'Bad Request',
+          message: 'File size too large. Maximum size is 10MB.',
+          statusCode: 400
+        });
+      }
+
+      // Process the image with OCR
+      const result = await OCRService.processInventoryItem(buffer);
+
+      return reply.code(200).send({
+        success: true,
+        data: result,
+        message: 'Image processed successfully'
+      });
+
+    } catch (error) {
+      fastify.log.error('OCR processing error: ' + (error instanceof Error ? error.message : String(error)));
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      return reply.code(500).send({
+        error: 'Internal Server Error',
+        message: errorMessage,
+        statusCode: 500
+      });
+    }
+  });
+
+  // OCR Receipt endpoint
+  fastify.post('/ocr/receipt', async (request, reply) => {
+    try {
+      // Check if file was uploaded
+      const data = await request.file();
+      if (!data) {
+        return reply.code(400).send({
+          error: 'Bad Request',
+          message: 'No image file provided',
+          statusCode: 400
+        });
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(data.mimetype)) {
+        return reply.code(400).send({
+          error: 'Bad Request',
+          message: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed.',
+          statusCode: 400
+        });
+      }
+
+      // Convert file to buffer
+      const buffer = await data.toBuffer();
+
+      // Validate file size (max 10MB)
+      if (buffer.length > 10 * 1024 * 1024) {
+        return reply.code(400).send({
+          error: 'Bad Request',
+          message: 'File size too large. Maximum size is 10MB.',
+          statusCode: 400
+        });
+      }
+
+      // Process the receipt with OCR
+      const result = await OCRService.processReceipt(buffer);
+
+      return reply.code(200).send({
+        success: true,
+        data: result,
+        message: 'Receipt processed successfully'
+      });
+
+    } catch (error) {
+      fastify.log.error('OCR receipt processing error: ' + (error instanceof Error ? error.message : String(error)));
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      return reply.code(500).send({
+        error: 'Internal Server Error',
+        message: errorMessage,
+        statusCode: 500
+      });
     }
   });
 
