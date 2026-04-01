@@ -3,58 +3,59 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // User & Authentication
 model User {
-  id            String            @id @default(cuid())
-  email         String            @unique
-  name          String?
-  password      String
-  avatar        String?
-  phone         String?
-  location      String?
-  emailVerified Boolean           @default(false)
-  settings      UserSettings?
-  preferences   UserPreferences?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  households    HouseholdMember[]
-  createdHouseholds Household[]   @relation("HouseholdCreator")
-  mealPlans     MealPlan[]
-  nutritionEntries NutritionEntry[]
-  nutritionGoals NutritionGoals[]
-  wasteEntries  WasteEntry[]
-  timers        KitchenTimer[]
+  id                String            @id @default(cuid())
+  email             String            @unique
+  name              String?
+  password          String
+  avatar            String?
+  phone             String?
+  location          String?
+  emailVerified     Boolean           @default(false)
+  settings          UserSettings?
+  preferences       UserPreferences?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  households        HouseholdMember[]
+  createdHouseholds Household[]       @relation("HouseholdCreator")
+  mealPlans         MealPlan[]
+  nutritionEntries  NutritionEntry[]
+  nutritionGoals    NutritionGoals[]
+  wasteEntries      WasteEntry[]
+  timers            KitchenTimer[]
 }
 
 // User Settings
 model UserSettings {
-  id            String              @id @default(cuid())
-  userId        String              @unique
-  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  notifications NotificationSettings @relation(fields: [notificationId], references: [id])
-  notificationId String             @unique
-  privacy       PrivacySettings     @relation(fields: [privacyId], references: [id])
-  privacyId     String              @unique
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  id             String               @id @default(cuid())
+  userId         String               @unique
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifications  NotificationSettings @relation(fields: [notificationId], references: [id])
+  notificationId String               @unique
+  privacy        PrivacySettings      @relation(fields: [privacyId], references: [id])
+  privacyId      String               @unique
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
 }
 
 model NotificationSettings {
-  id         String        @id @default(cuid())
-  lowStock   Boolean       @default(true)
-  expiry     Boolean       @default(true)
-  shopping   Boolean       @default(false)
-  mealPlan   Boolean       @default(true)
-  push       Boolean       @default(true)
-  email      Boolean       @default(false)
-  sms        Boolean       @default(false)
-  settings   UserSettings?
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  id        String        @id @default(cuid())
+  lowStock  Boolean       @default(true)
+  expiry    Boolean       @default(true)
+  shopping  Boolean       @default(false)
+  mealPlan  Boolean       @default(true)
+  push      Boolean       @default(true)
+  email     Boolean       @default(false)
+  sms       Boolean       @default(false)
+  settings  UserSettings?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
 
 model PrivacySettings {
@@ -239,7 +240,7 @@ model ShoppingListItem {
 
 // Expense Tracking
 model Expense {
-  id           String       @id @default(cuid())
+  id           String      @id @default(cuid())
   kitchenId    String
   type         ExpenseType
   amount       Float
@@ -249,9 +250,9 @@ model Expense {
   items        Json?
   notes        String?
   category     String?
-  kitchen      Kitchen      @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  kitchen      Kitchen     @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 }
 
 enum ExpenseType {
@@ -318,13 +319,13 @@ enum UsageLogType {
 
 // AI Scan History
 model AIScan {
-  id          String   @id @default(cuid())
-  imageUrl    String
-  scanType    String
-  result      Json
-  confidence  Float?
-  processed   Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  imageUrl   String
+  scanType   String
+  result     Json
+  confidence Float?
+  processed  Boolean  @default(false)
+  createdAt  DateTime @default(now())
 }
 
 // Recipe History
@@ -344,7 +345,7 @@ model RecipeHistory {
 
 // Meal Planning
 model MealPlan {
-  id          String     @id @default(cuid())
+  id          String   @id @default(cuid())
   userId      String
   kitchenId   String?
   date        DateTime
@@ -355,10 +356,10 @@ model MealPlan {
   calories    Int?
   prepTime    Int?
   notes       String?
-  isCompleted Boolean    @default(false)
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  isCompleted Boolean  @default(false)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([userId, date, mealType])
 }
@@ -374,9 +375,9 @@ model MealPlanTemplate {
   id          String   @id @default(cuid())
   name        String
   description String?
-  category    String   // "festival", "weekly", "diet", etc.
-  meals       Json     // Array of meal plan entries
-  duration    Int?     // Duration in days
+  category    String // "festival", "weekly", "diet", etc.
+  meals       Json // Array of meal plan entries
+  duration    Int? // Duration in days
   isPublic    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -384,47 +385,47 @@ model MealPlanTemplate {
 
 // Nutrition Tracking
 model NutritionEntry {
-  id          String   @id @default(cuid())
-  userId      String
-  date        DateTime
-  mealType    MealType
-  foodName    String
-  quantity    Float
-  unit        String
-  calories    Float?
-  protein     Float?
-  carbs       Float?
-  fat         Float?
-  fiber       Float?
-  sugar       Float?
-  sodium      Float?
-  notes       String?
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime
+  mealType  MealType
+  foodName  String
+  quantity  Float
+  unit      String
+  calories  Float?
+  protein   Float?
+  carbs     Float?
+  fat       Float?
+  fiber     Float?
+  sugar     Float?
+  sodium    Float?
+  notes     String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model NutritionGoals {
-  id           String   @id @default(cuid())
-  userId       String   @unique
+  id            String   @id @default(cuid())
+  userId        String   @unique
   dailyCalories Float?
-  dailyProtein Float?
-  dailyCarbs   Float?
-  dailyFat     Float?
-  dailyFiber   Float?
-  dailyWater   Float?   // in liters
-  weightGoal   Float?   // target weight
+  dailyProtein  Float?
+  dailyCarbs    Float?
+  dailyFat      Float?
+  dailyFiber    Float?
+  dailyWater    Float? // in liters
+  weightGoal    Float? // target weight
   activityLevel String? // sedentary, light, moderate, active, very_active
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model WaterIntake {
   id        String   @id @default(cuid())
   userId    String
   date      DateTime
-  amount    Float    // in ml
+  amount    Float // in ml
   time      DateTime
   createdAt DateTime @default(now())
 
@@ -433,7 +434,7 @@ model WaterIntake {
 
 // Waste Tracking
 model WasteEntry {
-  id          String    @id @default(cuid())
+  id          String      @id @default(cuid())
   userId      String
   kitchenId   String?
   date        DateTime
@@ -442,12 +443,12 @@ model WasteEntry {
   quantity    Float
   unit        String
   reason      WasteReason
-  cost        Float?    // estimated cost of wasted item
-  preventable Boolean   @default(true)
+  cost        Float? // estimated cost of wasted item
+  preventable Boolean     @default(true)
   notes       String?
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 enum WasteReason {
@@ -463,10 +464,10 @@ enum WasteReason {
 model WasteGoals {
   id              String   @id @default(cuid())
   userId          String   @unique
-  monthlyWasteKg  Float?   // target waste in kg per month
-  monthlyCostSave Float?   // target cost savings per month
-  co2SaveKg       Float?   // target CO2 savings in kg per month
-  waterSaveLiters Float?   // target water savings in liters per month
+  monthlyWasteKg  Float? // target waste in kg per month
+  monthlyCostSave Float? // target cost savings per month
+  co2SaveKg       Float? // target CO2 savings in kg per month
+  waterSaveLiters Float? // target water savings in liters per month
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -475,19 +476,19 @@ model WasteGoals {
 
 // Kitchen Timer
 model KitchenTimer {
-  id          String      @id @default(cuid())
+  id          String        @id @default(cuid())
   userId      String
   name        String
-  duration    Int         // duration in seconds
+  duration    Int // duration in seconds
   category    TimerCategory
-  isActive    Boolean     @default(false)
+  isActive    Boolean       @default(false)
   startedAt   DateTime?
   pausedAt    DateTime?
   completedAt DateTime?
   notes       String?
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 enum TimerCategory {
@@ -507,7 +508,7 @@ model Notification {
   type      NotificationType
   title     String
   message   String
-  data      Json?            // Additional data for the notification
+  data      Json? // Additional data for the notification
   isRead    Boolean          @default(false)
   sentAt    DateTime?
   readAt    DateTime?
@@ -528,4 +529,3 @@ enum NotificationType {
   SYSTEM_UPDATE
   GENERAL
 }
-

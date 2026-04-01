@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { resolve } from 'path';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 
 // Load .env from project root
 dotenv.config({ path: resolve(__dirname, '../.env') });
@@ -21,6 +22,48 @@ import { OCRService } from './services/ocr';
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 4000;
 const HOST = process.env.HOST || '0.0.0.0';
+const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
+
+async function readUploadedImage(request: FastifyRequest, reply: FastifyReply) {
+  const file = await request.file();
+
+  if (!file) {
+    return reply.code(400).send({
+      error: 'Bad Request',
+      message: 'No image file provided',
+      statusCode: 400,
+    });
+  }
+
+  if (!ALLOWED_IMAGE_TYPES.has(file.mimetype)) {
+    return reply.code(400).send({
+      error: 'Bad Request',
+      message: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed.',
+      statusCode: 400,
+    });
+  }
+
+  const buffer = await file.toBuffer();
+
+  if (buffer.length > MAX_UPLOAD_SIZE) {
+    return reply.code(400).send({
+      error: 'Bad Request',
+      message: 'File size too large. Maximum size is 10MB.',
+      statusCode: 400,
+    });
+  }
+
+  return buffer;
+}
+
+function sendInternalError(reply: FastifyReply, message: string) {
+  return reply.code(500).send({
+    error: 'Internal Server Error',
+    message,
+    statusCode: 500,
+  });
+}
 
 async function startServer() {
   const fastify = Fastify({
@@ -68,7 +111,7 @@ async function startServer() {
 
   await fastify.register(multipart, {
     limits: {
-      fileSize: 10 * 1024 * 1024, // 10MB
+      fileSize: MAX_UPLOAD_SIZE,
     },
   });
 
@@ -149,43 +192,15 @@ async function startServer() {
     }
   });
 
-  // OCR Inventory endpoint
+  // Keep OCR upload validation in one place so both endpoints behave identically.
   fastify.post('/ocr/inventory', async (request, reply) => {
     try {
-      // Check if file was uploaded
-      const data = await request.file();
-      if (!data) {
-        return reply.code(400).send({
-          error: 'Bad Request',
-          message: 'No image file provided',
-          statusCode: 400
-        });
+      const imageBuffer = await readUploadedImage(request, reply);
+      if (!Buffer.isBuffer(imageBuffer)) {
+        return imageBuffer;
       }
 
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      if (!allowedTypes.includes(data.mimetype)) {
-        return reply.code(400).send({
-          error: 'Bad Request',
-          message: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed.',
-          statusCode: 400
-        });
-      }
-
-      // Convert file to buffer
-      const buffer = await data.toBuffer();
-
-      // Validate file size (max 10MB)
-      if (buffer.length > 10 * 1024 * 1024) {
-        return reply.code(400).send({
-          error: 'Bad Request',
-          message: 'File size too large. Maximum size is 10MB.',
-          statusCode: 400
-        });
-      }
-
-      // Process the image with OCR
-      const result = await OCRService.processInventoryItem(buffer);
+      const result = await OCRService.processInventoryItem(imageBuffer);
 
       return reply.code(200).send({
         success: true,
@@ -198,51 +213,18 @@ async function startServer() {
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       
-      return reply.code(500).send({
-        error: 'Internal Server Error',
-        message: errorMessage,
-        statusCode: 500
-      });
+      return sendInternalError(reply, errorMessage);
     }
   });
 
-  // OCR Receipt endpoint
   fastify.post('/ocr/receipt', async (request, reply) => {
     try {
-      // Check if file was uploaded
-      const data = await request.file();
-      if (!data) {
-        return reply.code(400).send({
-          error: 'Bad Request',
-          message: 'No image file provided',
-          statusCode: 400
-        });
+      const imageBuffer = await readUploadedImage(request, reply);
+      if (!Buffer.isBuffer(imageBuffer)) {
+        return imageBuffer;
       }
 
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      if (!allowedTypes.includes(data.mimetype)) {
-        return reply.code(400).send({
-          error: 'Bad Request',
-          message: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed.',
-          statusCode: 400
-        });
-      }
-
-      // Convert file to buffer
-      const buffer = await data.toBuffer();
-
-      // Validate file size (max 10MB)
-      if (buffer.length > 10 * 1024 * 1024) {
-        return reply.code(400).send({
-          error: 'Bad Request',
-          message: 'File size too large. Maximum size is 10MB.',
-          statusCode: 400
-        });
-      }
-
-      // Process the receipt with OCR
-      const result = await OCRService.processReceipt(buffer);
+      const result = await OCRService.processReceipt(imageBuffer);
 
       return reply.code(200).send({
         success: true,
@@ -255,11 +237,7 @@ async function startServer() {
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       
-      return reply.code(500).send({
-        error: 'Internal Server Error',
-        message: errorMessage,
-        statusCode: 500
-      });
+      return sendInternalError(reply, errorMessage);
     }
   });
 
